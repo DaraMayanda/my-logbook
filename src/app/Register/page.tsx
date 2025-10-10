@@ -13,7 +13,6 @@ const InputIcon = ({ children }: { children: React.ReactNode }) => (
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
-  const [nip, setNip] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -33,7 +32,7 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: fullName,
-            nip: nip,
+      
           }
         }
       })
@@ -44,7 +43,6 @@ export default function RegisterPage() {
 
       setSuccess('Registrasi berhasil! Silakan periksa email Anda untuk konfirmasi.')
       setFullName('')
-      setNip('')
       setEmail('')
       setPassword('')
 
@@ -151,4 +149,3 @@ export default function RegisterPage() {
     </div>
   )
 }
-

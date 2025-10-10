@@ -1,104 +1,286 @@
-import Link from 'next/link'
+'use client';
+import { ArrowLeft, ArrowRight, FileText, User, BarChart2, Briefcase, LogOut, AlertTriangle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient'; // Import Supabase Client
 
-// Hapus semua import Supabase, cookies, dan redirect.
-// Gunakan data dummy agar komponen bisa langsung render.
+/**
+ * Komponen Dashboard Utama (Client Component).
+ */
+export default function DashboardPage() {
+    const router = useRouter(); 
+    const [absensiStatus, setAbsensiStatus] = useState<'Belum Absen' | 'Masuk' | 'Pulang'>('Belum Absen');
+    const [userData, setUserData] = useState({ fullName: "Loading...", email: "loading@kppn.go.id" });
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    
+    // STATE BARU: Untuk melacak apakah logbook sudah diisi hari ini
+    const [hasCompletedLogbook, setHasCompletedLogbook] = useState(false); 
 
-// Data Dummy
-const DUMMY_PROFILE = {
-  full_name: 'Pegawai Contoh',
-  userEmail: 'contoh@perusahaan.com',
-  role: 'pegawai',
-}
 
-// Komponen Icon SVG menggunakan Tailwind CSS
-const Icon = ({ path, label }: { path: string, label: string }) => (
-  <div className="flex flex-col items-center justify-center p-4">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-7 w-7 mb-1 text-[#003366]">
-      <path strokeLinecap="round" strokeLinejoin="round" d={path} />
-    </svg>
-    <span className="text-sm font-semibold text-gray-700">{label}</span>
-  </div>
-);
+    /**
+     * Efek 1: Proteksi Rute, Ambil Data Pengguna, Cek Status Absensi & Logbook
+     */
+    useEffect(() => {
+        const fetchAndCheckStatus = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
 
-// Komponen Dashboard (ASYNC diperlukan karena ini adalah Server Component)
-export default async function Dashboard() {
-  // Semua logika autentikasi dan database dihapus.
- 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header Biru Tua - Profil Pegawai */}
-      <header className="bg-[#003366] text-white p-4 shadow-md flex items-center">
-        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-3">
-          <span className="text-xl font-bold text-[#003366]">
-            {DUMMY_PROFILE.full_name.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold">{DUMMY_PROFILE.full_name}</h1>
-          <p className="text-sm opacity-80">{DUMMY_PROFILE.userEmail}</p>
-        </div>
-      </header>
-      
-      <main className="p-4">
-        
-        {/* Status Absensi Hari Ini */}
-        <div className="bg-white p-4 rounded-xl shadow-md mb-6 border-l-4 border-red-500">
-          <p className="text-sm text-gray-700 font-medium">Status Absensi Hari Ini</p>
-          <p className="text-xl font-bold text-red-600 mt-1">
-            Belum Absen
-          </p>
-        </div>
-        
-        {/* Tombol Absen */}
-        <div className="flex gap-4 mb-8">
-          <button className="flex-1 bg-[#003366] text-white font-medium py-3 rounded-xl shadow-lg hover:bg-opacity-95 transition-all flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 mr-2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-            </svg>
-            Absen Masuk
-          </button>
-          <button disabled className="flex-1 bg-gray-300 text-gray-500 font-medium py-3 rounded-xl shadow-md cursor-not-allowed flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 mr-2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
-            </svg>
-            Absen Pulang
-          </button>
-        </div>
-        
-        {/* Menu Utama (Logbook, Cuti, Rekap) */}
-        <div className="grid grid-cols-1 gap-4 mb-6">
-          {/* Link ke Logbook */}
-          <Link href="/logbook" className="bg-white p-4 rounded-xl shadow-md border border-gray-200 hover:border-[#003366] transition-all flex items-center">
-                <Icon path="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" label="Logbook" />
-                <div className="ml-4">
-                    <h3 className="font-bold text-gray-800">Logbook Harian</h3>
-                    <p className="text-sm text-gray-500">Catat aktivitas dan pekerjaan Anda</p>
-                </div>
-          </Link>
-          {/* Link ke Cuti */}
-          <Link href="/cuti" className="bg-white p-4 rounded-xl shadow-md border border-gray-200 hover:border-[#003366] transition-all flex items-center">
-                <Icon path="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 14.25h.008v.008H12v-.008z" label="Pengajuan Cuti" />
-                <div className="ml-4">
-                    <h3 className="font-bold text-gray-800">Cuti & Izin</h3>
-                    <p className="text-sm text-gray-500">Ajukan permohonan cuti atau izin</p>
-                </div>
-          </Link>
-          {/* Link ke Rekap Absensi */}
-          <Link href="/rekap-absen" className="bg-white p-4 rounded-xl shadow-md border border-gray-200 hover:border-[#003366] transition-all flex items-center">
-                <Icon path="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" label="Rekap Absensi" />
-                <div className="ml-4">
-                    <h3 className="font-bold text-gray-800">Riwayat Kehadiran</h3>
-                    <p className="text-sm text-gray-500">Lihat rekapitulasi absensi bulanan</p>
-                </div>
-          </Link>
-        </div>
-        
-        {/* Pesan Kaki */}
-        <p className="text-center text-sm text-blue-700 font-medium p-3 bg-blue-100/50 rounded-xl border border-blue-200">
-            Jangan lupa, isi Logbook sebelum melakukan Absen Pulang.
-        </p>
+            if (!user) {
+                router.replace('/Login');
+                return;
+            }
 
-      </main>
-    </div>
-  )
+            // --- 1. Ambil Data Profil (full_name) ---
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .single();
+            
+            setUserData({
+                // Mengambil full_name dari database
+                fullName: profileData?.full_name || user.email?.split('@')[0] || 'Pengguna KPPN', 
+                email: user.email || 'N/A',
+            });
+
+
+            // --- 2. Ambil Status Absensi dari LocalStorage ---
+            if (typeof window !== 'undefined') {
+                const storedStatus = localStorage.getItem('absensi_status') as 'Belum Absen' | 'Masuk' | 'Pulang';
+                if (storedStatus) {
+                    setAbsensiStatus(storedStatus);
+                }
+            }
+            
+            // --- 3. Cek Status Logbook Harian dari Supabase ---
+            // Kita hanya perlu cek jika statusnya 'Masuk'
+            if (absensiStatus === 'Masuk' || absensiStatus === 'Belum Absen') {
+                const today = new Date().toISOString().substring(0, 10); // Format YYYY-MM-DD
+                
+                const { data: logbookData, error: logbookError } = await supabase
+                    .from('logbooks')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('log_date', today);
+
+           //   if (logbookError) {
+              //    console.error("Gagal cek logbook:", logbookError.message);
+                    // Kita asumsikan belum diisi jika terjadi error untuk keamanan
+           //       setHasCompletedLogbook(false); //
+        //      } else if (logbookData && logbookData.length > 0) {//
+               //   setHasCompletedLogbook(true);//
+              //} else {
+             //     setHasCompletedLogbook(false);//
+          //    }//
+          }
+            
+            setIsLoading(false);
+        };
+
+        fetchAndCheckStatus();
+        // Menambahkan absensiStatus sebagai dependency agar pengecekan logbook berjalan setelah status absen berubah
+    }, [router, absensiStatus]); 
+    
+    // --- Fungsi Interaksi Absensi ---
+    const handleAbsenMasuk = () => {
+        // Arahkan ke halaman Check-In untuk mendapatkan lokasi/geolokasi
+        router.push('/CheckInPage'); 
+    };
+
+    const handleAbsenPulang = () => {
+        // Cek Logbook di klien (sebagai validasi kedua, utama di Supabase)
+        if (!hasCompletedLogbook) {
+            console.error("Logbook belum diisi. Tidak dapat Absen Pulang.");
+            // Karena tidak boleh menggunakan alert(), kita biarkan tombol disabled
+            return; 
+        }
+
+        // Logika absen pulang nyata: panggil API Supabase untuk mencatat jam pulang
+        setAbsensiStatus('Pulang');
+        localStorage.setItem('absensi_status', 'Pulang');
+        console.log("Absen Pulang berhasil dicatat di LocalStorage dan Supabase API harus dipanggil di sini.");
+    };
+
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        console.log("Memproses Logout dengan Supabase...");
+        
+        // Hapus sesi Supabase yang sebenarnya
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+            console.error("Gagal logout:", error);
+            // Tetap lanjutkan logout lokal meskipun Supabase gagal menghapus sesi (fallback)
+        }
+        
+        // Hapus status absensi lokal (opsional, tergantung logic reset harian)
+        localStorage.removeItem('absensi_status');
+        
+        // Redirect ke Login
+        router.replace('/ogin'); 
+    };
+    // ------------------------------------
+
+    /**
+     * Komponen Badge Status Absensi
+     */
+    const StatusBadge = ({ status }: { status: string }) => {
+        let bgColor: string;
+        let text: string;
+        let ringColor: string; 
+
+        if (status === 'Masuk') {
+            bgColor = 'bg-green-600';
+            text = 'Sudah Absen Masuk';
+            ringColor = 'ring-green-400';
+        } else if (status === 'Pulang') {
+            bgColor = 'bg-blue-600';
+            text = 'Selesai Hari Ini';
+            ringColor = 'ring-blue-400';
+        } else {
+            bgColor = 'bg-red-600';
+            text = 'Belum Absen';
+            ringColor = 'ring-red-400';
+        }
+
+        return (
+            <div className={`px-4 py-2 text-white rounded-full font-semibold text-sm shadow-md transition duration-300 
+                             ${bgColor} ring-2 ${ringColor} ring-opacity-50`}>
+                {text}
+            </div>
+        );
+    };
+
+    /**
+     * Komponen Kartu Fitur
+     */
+    const FeatureCard = ({ icon: Icon, title, description, href }: { icon: any, title: string, description: string, href: string }) => (
+        <a href={href} className="flex items-center p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition duration-300 border border-gray-100 transform hover:scale-[1.01]">
+            <div className="p-3 bg-blue-100 text-blue-800 rounded-lg mr-4 shadow-inner">
+                <Icon size={24} />
+            </div>
+            <div>
+                <h3 className="font-bold text-lg text-gray-800">{title}</h3>
+                <p className="text-sm text-gray-500">{description}</p>
+            </div>
+        </a>
+    );
+
+    // Tampilkan Loading State jika data sedang diambil atau sedang logout
+    if (isLoading || isLoggingOut) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center">
+                    <RefreshCw className="h-8 w-8 animate-spin text-blue-700" />
+                    <p className="mt-4 text-gray-600 font-semibold">{isLoggingOut ? "Sampai Jumpa..." : "Memuat Dashboard..."}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Kondisi untuk menonaktifkan tombol Absen Pulang
+    const isPulangDisabled = absensiStatus !== 'Masuk' || !hasCompletedLogbook;
+
+
+    return (
+        <div className="min-h-screen bg-gray-50 font-sans">
+            {/* Header Profil (Warna Biru Tua) */}
+            <header className="bg-blue-900 text-white p-6 pb-20 shadow-xl rounded-b-2xl">
+                <div className="flex justify-between items-start">
+                    {/* Info Pengguna */}
+                    <div className="flex items-center space-x-3">
+                        {/* Menggunakan ikon aplikasi/logo di sini */}
+                        <div className="p-2 rounded-full bg-white">
+                            <User size={24} className="text-blue-900" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-extrabold">{userData.fullName}</h1>
+                            <p className="text-sm opacity-80">{userData.email}</p>
+                        </div>
+                    </div>
+
+                    {/* Tombol Logout */}
+                    <button
+                        onClick={handleLogout}
+                        className="text-white hover:text-red-300 transition duration-200 p-2 rounded-full focus:outline-none"
+                        aria-label="Logout"
+                    >
+                        <LogOut size={24} />
+                    </button>
+                </div>
+            </header>
+
+            {/* Konten Utama (Berada di atas lekukan header) */}
+            <main className="px-5 -mt-10 pb-10">
+
+                {/* Status Absensi Hari Ini */}
+                <div className="bg-white p-5 rounded-xl shadow-2xl mb-6 border-b-4 border-blue-500">
+                    <h2 className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wider">Status Absensi Hari Ini</h2>
+                    <div className="flex items-center justify-between">
+                        <StatusBadge status={absensiStatus} />
+                    </div>
+                </div>
+
+                {/* Tombol Absensi */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    {/* Tombol Absen Masuk */}
+                    <button
+                        onClick={handleAbsenMasuk}
+                        className="flex items-center justify-center space-x-2 bg-blue-800 text-white py-3 rounded-xl shadow-lg hover:bg-blue-700 transition duration-300 disabled:bg-gray-400 disabled:shadow-none"
+                        disabled={absensiStatus !== 'Belum Absen'}
+                    >
+                        <ArrowRight size={20} />
+                        <span className="font-bold">Absen Masuk</span>
+                    </button>
+                    {/* Tombol Absen Pulang */}
+                    <button
+                        onClick={handleAbsenPulang}
+                        className={`flex items-center justify-center space-x-2 py-3 rounded-xl shadow-lg transition duration-300 
+                                    ${isPulangDisabled ? 'bg-gray-400 text-gray-200 disabled:shadow-none' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                        disabled={isPulangDisabled} // Menggunakan kondisi baru
+                    >
+                        <ArrowLeft size={20} />
+                        <span className="font-bold">Absen Pulang</span>
+                    </button>
+                </div>
+
+                {/* Bagian Peringatan Logbook */}
+                {absensiStatus === 'Masuk' && (
+                    <div className={`p-4 mb-8 rounded-xl shadow-sm border ${hasCompletedLogbook ? 'bg-green-50 border-green-300 text-green-800' : 'bg-yellow-50 border-yellow-300 text-yellow-800'}`}>
+                        <p className="font-semibold flex justify-center items-center text-center">
+                            <AlertTriangle size={20} className={`mr-3 flex-shrink-0 hidden sm:inline ${hasCompletedLogbook ? 'text-green-600' : 'text-yellow-600'}`} />
+                            <span className={hasCompletedLogbook ? 'text-green-900' : 'text-yellow-900'}>
+                                {hasCompletedLogbook 
+                                    ? "Logbook Harian telah **terisi**. Anda siap untuk Absen Pulang." 
+                                    : "Penting: Mohon isi Logbook Harian Anda sebelum melakukan absen pulang."}
+                            </span>
+                        </p>
+                    </div>
+                )}
+
+                {/* Kartu Menu Fitur */}
+                <h2 className="text-lg font-bold text-gray-800 mb-4">Menu Aplikasi</h2>
+                <div className="space-y-4">
+                    <FeatureCard
+                        icon={FileText}
+                        title="Logbook"
+                        description="Catat detail aktivitas harian Anda."
+                        href="/Logbook"
+                    />
+                    <FeatureCard
+                        icon={Briefcase}
+                        title="Pengajuan Cuti"
+                        description="Ajukan permohonan cuti atau izin."
+                        href="/Cuti"
+                    />
+                    <FeatureCard
+                        icon={BarChart2}
+                        title="Rekap Absensi"
+                        description="Lihat riwayat kehadiran bulanan."
+                        href="/RekapAbsensi"
+                    />
+                </div>
+            </main>
+        </div>
+    );
 }
