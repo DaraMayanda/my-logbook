@@ -12,7 +12,7 @@ const OFFICE_LOCATION = {
   RADIUS_M: 500,
 }
 
-export default function CheckInPage() {
+export default function CheckOutPage() {
   const router = useRouter()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null)
@@ -54,7 +54,7 @@ export default function CheckInPage() {
         const dist = R * c
         setDistance(dist)
 
-        // Ambil alamat via OpenStreetMap Nominatim API
+        // Ambil alamat via OpenStreetMap
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
@@ -99,13 +99,13 @@ export default function CheckInPage() {
     year: 'numeric',
   })
 
-  const handleCheckIn = async () => {
+  const handleCheckOut = async () => {
     if (!location) {
       toast.error('Lokasi belum terdeteksi.')
       return
     }
 
-    // Validasi lokasi (boleh absen jika jarak < 500m meski alamat bukan “Lhokseumawe”)
+    // Validasi lokasi
     const isValidLocation =
       (distance && distance <= OFFICE_LOCATION.RADIUS_M) ||
       (address && address.toLowerCase().includes('lhokseumawe'))
@@ -125,21 +125,23 @@ export default function CheckInPage() {
       }
 
       const now = new Date()
-      const jamMasuk = now.toLocaleTimeString('en-US', { hour12: false })
-      const batasJamMasuk = '08:00:00'
-      const status = jamMasuk > batasJamMasuk ? 'Terlambat' : 'Hadir'
+      const jamPulang = now.toLocaleTimeString('en-US', { hour12: false })
+      const tanggalHariIni = now.toISOString().split('T')[0]
 
-      const { error } = await supabase.from('logbooks').insert({
-        user_id: user.id,
-        log_date: now.toISOString().split('T')[0],
-        start_time: jamMasuk,
-        position_at_time: address,
-        description: 'Absen Masuk',
-        status,
-      })
+      // Update logbook (absen pulang hari ini)
+      const { error } = await supabase
+        .from('logbooks')
+        .update({
+          end_time: jamPulang,
+          position_at_time: address,
+          description: 'Absen Pulang',
+        })
+        .eq('user_id', user.id)
+        .eq('log_date', tanggalHariIni)
 
       if (error) throw error
-      toast.success(`Absen berhasil (${status})`)
+
+      toast.success('Absen Pulang Berhasil!')
       router.replace('/Dashboard')
     } catch (err) {
       console.error(err)
@@ -159,7 +161,7 @@ export default function CheckInPage() {
         >
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-xl font-bold">Absen Masuk</h1>
+        <h1 className="text-xl font-bold">Absen Pulang</h1>
       </header>
 
       <main className="p-6">
@@ -176,7 +178,13 @@ export default function CheckInPage() {
         {/* Lokasi */}
         <div className="bg-white p-4 rounded-xl shadow-md border mb-5">
           <p className="font-semibold text-gray-700 mb-1">Status Lokasi:</p>
-          <p className={`text-sm ${distance && distance <= OFFICE_LOCATION.RADIUS_M ? 'text-green-600' : 'text-red-600'}`}>
+          <p
+            className={`text-sm ${
+              distance && distance <= OFFICE_LOCATION.RADIUS_M
+                ? 'text-green-600'
+                : 'text-red-600'
+            }`}
+          >
             {locationStatus}
           </p>
 
@@ -187,9 +195,16 @@ export default function CheckInPage() {
             </p>
           )}
 
-          <p className="mt-2 text-sm text-gray-600"><b>Alamat Saat Ini:</b><br />{address}</p>
+          <p className="mt-2 text-sm text-gray-600">
+            <b>Alamat Saat Ini:</b>
+            <br />
+            {address}
+          </p>
           <p className="mt-2 text-xs text-gray-400">
-            Koordinat: {location ? `${location.lat.toFixed(6)}, ${location.lon.toFixed(6)}` : '...'}
+            Koordinat:{' '}
+            {location
+              ? `${location.lat.toFixed(6)}, ${location.lon.toFixed(6)}`
+              : '...'}
           </p>
 
           <button
@@ -200,9 +215,9 @@ export default function CheckInPage() {
           </button>
         </div>
 
-        {/* Tombol Absen */}
+        {/* Tombol Absen Pulang */}
         <button
-          onClick={handleCheckIn}
+          onClick={handleCheckOut}
           disabled={isSubmitting}
           className={`w-full py-4 text-white font-extrabold rounded-xl transition duration-300 shadow-xl ${
             isSubmitting
@@ -210,12 +225,15 @@ export default function CheckInPage() {
               : 'bg-blue-900 hover:bg-blue-800 shadow-blue-500/50'
           }`}
         >
-          {isSubmitting ? 'Memproses...' : 'SUBMIT ABSEN MASUK'}
+          {isSubmitting ? 'Memproses...' : 'SUBMIT ABSEN PULANG'}
         </button>
 
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 text-center">
           <p className="font-semibold text-blue-900 mb-1">Catatan:</p>
-          <p>Absen akan dianggap valid jika dalam radius 500 meter dari kantor.</p>
+          <p>
+            Absen akan dianggap valid jika dalam radius 500 meter dari kantor,
+            atau alamat terdeteksi di wilayah Lhokseumawe.
+          </p>
         </div>
       </main>
     </div>
